@@ -3,7 +3,7 @@
 # shims of corepack are there, and the German locale and the time zone data exist. pnpm itself is not
 # started, because corepack would download it. Runs as a user without a home of its own.
 set -eu
-for major in 17 21 25 26; do
+for major in 17 21 25 26 27; do
   "/opt/java/${major}/bin/java" -version 2>&1 | head -1
 done
 echo "JAVA_HOME=${JAVA_HOME}"

@@ -27,21 +27,25 @@ RUN apt-get update \
 # Temurin JDKs under /opt/java/<major>. Arguments: major, tag of the release, version in the file name,
 # SHA-256 for x64, SHA-256 for aarch64.
 RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
-    sh /tmp/jdk.sh 17 "jdk-17.0.21%2B9" 17.0.21_9 \
-      8b9b611d917e3dfd8419d3566b5949226f69b052fed7e109c1368add1dfe8711 \
-      3e4eca7ead088f080af1476007decf010a240a1eb4e1e78c54fa32fbcc347084
+    sh /tmp/jdk.sh 17 "jdk-17.0.21.1%2B2" 17.0.21.1_2 \
+      0b0ac5eab6db6abaec68c9913bcddb31321e5da411c45073d520d9c125e6f7b4 \
+      1d808f4b558e9de63d8ba3ead21ffc8b9de204894eff3c19d52c1480aa17cc58
 RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
-    sh /tmp/jdk.sh 21 "jdk-21.0.13%2B9" 21.0.13_9 \
-      d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c \
-      e3522e707fc7dbe2a72c30746b1e7068301a0213ecd213d4491f35a14eb55578
+    sh /tmp/jdk.sh 21 "jdk-21.0.13.1%2B2" 21.0.13.1_2 \
+      bb8a93f9ae6e7a693b2b721e85dbeff26ae1a77447985a8d7afcdd9c7cf6222e \
+      8c72816a6b308842d5ed1f13e5826b69c567da4784f7238d7e800efa71fe54b1
 RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
-    sh /tmp/jdk.sh 25 "jdk-25.0.5%2B8" 25.0.5_8 \
-      68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb \
-      bb5b2ded252f21c6090cf780b0a408ad0d83bbb557e702955643557f13231880
+    sh /tmp/jdk.sh 25 "jdk-25.0.5.1%2B2" 25.0.5.1_2 \
+      760f91b22c3efc9bd1b64ff950598231be82928cc807e30691a0e7a2995a62c0 \
+      c37879e0d08eeb1baa69fcbb7758cd455b7b1c0ceab1e2a136ccb1713c530984
 RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
     sh /tmp/jdk.sh 26 "jdk-26.0.2.1%2B1" 26.0.2.1_1 \
       451c12e68747bcfa2fb5a2c16b00483fedb9fa6d77bc962d30957f76ac17044d \
       9f6ad9856a7dd880061adaf88db3c4da0642113d59b7960a892f0e551c0c948c
+RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
+    sh /tmp/jdk.sh 27 "jdk-27.0.1.1%2B4" 27.0.1.1_4 \
+      005e57ee860978acfeeff1be2b30f770664fe2b941e9b803c61c76992086d107 \
+      fc6986815165fc9506eb6a01ace00942f5c91c993102355ab01cea3e2de9736d
 
 # Maven for projects without a wrapper. A wrapper downloads its own version.
 ARG MAVEN_VERSION=3.9.16
