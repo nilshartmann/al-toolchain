@@ -39,10 +39,6 @@ RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
       760f91b22c3efc9bd1b64ff950598231be82928cc807e30691a0e7a2995a62c0 \
       c37879e0d08eeb1baa69fcbb7758cd455b7b1c0ceab1e2a136ccb1713c530984
 RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
-    sh /tmp/jdk.sh 26 "jdk-26.0.2.1%2B1" 26.0.2.1_1 \
-      451c12e68747bcfa2fb5a2c16b00483fedb9fa6d77bc962d30957f76ac17044d \
-      9f6ad9856a7dd880061adaf88db3c4da0642113d59b7960a892f0e551c0c948c
-RUN --mount=type=bind,source=scripts/jdk.sh,target=/tmp/jdk.sh \
     sh /tmp/jdk.sh 27 "jdk-27.0.1.1%2B4" 27.0.1.1_4 \
       005e57ee860978acfeeff1be2b30f770664fe2b941e9b803c61c76992086d107 \
       fc6986815165fc9506eb6a01ace00942f5c91c993102355ab01cea3e2de9736d
