@@ -4,9 +4,12 @@
 # needs for Playwright. It is meant as a base for other images and therefore has no entrypoint and no
 # user of its own.
 #
+# Stage "toolchain" is the image al-toolchain. Stage "kubernetes" adds kubectl and Helm and is the image
+# al-toolchain-kubernetes. A build without a target builds the last stage, so the action names the target.
+#
 # Every download has a fixed version and a fixed SHA-256 (SHA-512 for Maven) for each architecture.
 
-FROM ubuntu:24.04@sha256:2198e4c65076e9cb0b3d695219df667c0e3b0072da64ca3c2648aca17dcecaf5
+FROM ubuntu:24.04@sha256:2198e4c65076e9cb0b3d695219df667c0e3b0072da64ca3c2648aca17dcecaf5 AS toolchain
 
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -83,3 +86,45 @@ ENV JAVA_HOME=/opt/java/25 \
 
 LABEL org.opencontainers.image.source="https://github.com/nilshartmann/al-toolchain" \
       org.opencontainers.image.description="JDKs, Maven and Node on Ubuntu 24.04"
+
+FROM toolchain AS kubernetes
+
+ARG TARGETARCH
+
+# kubectl as a single binary. No cluster runs in the image, so there is no check of the distance to a
+# server version.
+ARG KUBECTL_VERSION=v1.35.11
+ARG KUBECTL_SHA256_AMD64=eeddea383a302f9a633a292af1d886054c7cf152fb407f827f12bfe286dc46d6
+ARG KUBECTL_SHA256_ARM64=e69973a0b8c23412f2f6bba6a91b98579a1787c4d731fb4cb5987ba273763318
+RUN set -eu; \
+    case "$TARGETARCH" in \
+      amd64) sha="$KUBECTL_SHA256_AMD64" ;; \
+      arm64) sha="$KUBECTL_SHA256_ARM64" ;; \
+      *) echo "Unsupported architecture: '$TARGETARCH'." >&2; exit 1 ;; \
+    esac; \
+    cd /tmp; \
+    curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl"; \
+    echo "${sha}  kubectl" | sha256sum -c -; \
+    install -m 0755 kubectl /usr/local/bin/kubectl; \
+    rm -f kubectl
+
+# Helm from the official tarball. It honours HTTPS_PROXY, so a chart from a remote repository needs
+# its host in the allowlist of the sandbox.
+ARG HELM_VERSION=v4.3.2
+ARG HELM_SHA256_AMD64=d1c0278d46beab79582d7e50f5b3dc206944ba8e577cde618513fd07daa53983
+ARG HELM_SHA256_ARM64=df31cb61680ef728f82c770e5280dd565617bee6b039d37e85c677288be4bbb0
+RUN set -eu; \
+    case "$TARGETARCH" in \
+      amd64) sha="$HELM_SHA256_AMD64" ;; \
+      arm64) sha="$HELM_SHA256_ARM64" ;; \
+      *) echo "Unsupported architecture: '$TARGETARCH'." >&2; exit 1 ;; \
+    esac; \
+    cd /tmp; \
+    tarball="helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz"; \
+    curl -fsSLO "https://get.helm.sh/${tarball}"; \
+    echo "${sha}  ${tarball}" | sha256sum -c -; \
+    tar -xzf "${tarball}" "linux-${TARGETARCH}/helm"; \
+    install -m 0755 "linux-${TARGETARCH}/helm" /usr/local/bin/helm; \
+    rm -rf "${tarball}" "linux-${TARGETARCH}"
+
+LABEL org.opencontainers.image.description="JDKs, Maven, Node, kubectl and Helm on Ubuntu 24.04"

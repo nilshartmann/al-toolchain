@@ -10,6 +10,11 @@
 
 Every download has a fixed version and a fixed checksum for each architecture.
 
+## al-toolchain-kubernetes
+
+`ghcr.io/nilshartmann/al-toolchain-kubernetes` is the same toolchain with `kubectl` 1.35 and Helm 4 in `/usr/local/bin`. It is the
+stage `kubernetes` of the Dockerfile and is built from the same commit as `al-toolchain`. There is no cluster in the image and no k3d.
+
 ## JDK 26 removed
 
 JDK 26 has reached its end of life and gets no fix for CVE-2026-114938 ("Java4Shell"). It is therefore no longer part of the
@@ -18,4 +23,5 @@ image. Migrate to JDK 27. The last image with JDK 26 is tagged `sha-7310b73f909c
 ## Build
 
 The action `.github/workflows/build.yml` builds on a push to `main` that changes the image, and by hand through "Run workflow". It
-checks each architecture with `scripts/check.sh` and prints the digest of the image at the end.
+builds both images, checks each architecture with `scripts/check.sh` (the image with Kubernetes also with
+`scripts/check-kubernetes.sh`) and prints both digests at the end.

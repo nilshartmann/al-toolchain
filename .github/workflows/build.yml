@@ -14,8 +14,10 @@ permissions:
   contents: read
   packages: write
 
+# Two images from the stages of the Dockerfile: IMAGE from "toolchain", KUBERNETES from "kubernetes".
 env:
   IMAGE: ghcr.io/nilshartmann/al-toolchain
+  KUBERNETES: ghcr.io/nilshartmann/al-toolchain-kubernetes
 
 jobs:
   build:
@@ -39,6 +41,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
+          target: toolchain
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
           provenance: false
@@ -46,15 +49,32 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.runner }}
       - name: Check image
         run: docker run --rm -i --user 12345:12345 "${IMAGE}@${{ steps.build.outputs.digest }}" sh -s < scripts/check.sh
-      - name: Remember digest
+      - id: build-kubernetes
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: kubernetes
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.KUBERNETES }},push-by-digest=true,name-canonical=true,push=true
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.runner }}-kubernetes
+          cache-to: type=gha,mode=max,scope=${{ matrix.runner }}-kubernetes
+      - name: Check image with kubectl and Helm
         run: |
-          mkdir -p /tmp/digests
+          ref="${KUBERNETES}@${{ steps.build-kubernetes.outputs.digest }}"
+          docker run --rm -i --user 12345:12345 "$ref" sh -s < scripts/check.sh
+          docker run --rm -i --user 12345:12345 "$ref" sh -s < scripts/check-kubernetes.sh
+      - name: Remember digests
+        run: |
+          mkdir -p /tmp/digests/toolchain /tmp/digests/kubernetes
           digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          touch "/tmp/digests/toolchain/${digest#sha256:}"
+          digest="${{ steps.build-kubernetes.outputs.digest }}"
+          touch "/tmp/digests/kubernetes/${digest#sha256:}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: digest-${{ matrix.runner }}
-          path: /tmp/digests/*
+          path: /tmp/digests/
           if-no-files-found: error
           retention-days: 1
 
@@ -76,11 +96,16 @@ jobs:
       - name: Create one entry for both architectures
         working-directory: /tmp/digests
         run: |
-          refs=""
-          for digest in *; do refs="$refs ${IMAGE}@sha256:${digest}"; done
-          # shellcheck disable=SC2086
-          docker buildx imagetools create -t "${IMAGE}:latest" -t "${IMAGE}:sha-${GITHUB_SHA::12}" $refs
-      - name: Print digest
+          for pair in "toolchain ${IMAGE}" "kubernetes ${KUBERNETES}"; do
+            stage="${pair%% *}"; image="${pair#* }"
+            refs=""
+            for digest in "$stage"/*; do refs="$refs ${image}@sha256:${digest#"$stage"/}"; done
+            # shellcheck disable=SC2086
+            docker buildx imagetools create -t "${image}:latest" -t "${image}:sha-${GITHUB_SHA::12}" $refs
+          done
+      - name: Print digests
         run: |
-          digest="$(docker buildx imagetools inspect "${IMAGE}:sha-${GITHUB_SHA::12}" --format '{{json .Manifest}}' | jq -r .digest)"
-          echo "${IMAGE}@${digest}" | tee -a "$GITHUB_STEP_SUMMARY"
+          for image in "$IMAGE" "$KUBERNETES"; do
+            digest="$(docker buildx imagetools inspect "${image}:sha-${GITHUB_SHA::12}" --format '{{json .Manifest}}' | jq -r .digest)"
+            echo "${image}@${digest}" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
