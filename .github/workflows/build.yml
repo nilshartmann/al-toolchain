@@ -57,7 +57,10 @@ jobs:
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=${{ env.KUBERNETES }},push-by-digest=true,name-canonical=true,push=true
           provenance: false
-          cache-from: type=gha,scope=${{ matrix.runner }}-kubernetes
+          # The cache of the stage "toolchain" too, so that this build does not build the toolchain again.
+          cache-from: |
+            type=gha,scope=${{ matrix.runner }}
+            type=gha,scope=${{ matrix.runner }}-kubernetes
           cache-to: type=gha,mode=max,scope=${{ matrix.runner }}-kubernetes
       - name: Check image with kubectl and Helm
         run: |
